@@ -1,80 +1,60 @@
-from gensim.models import Word2Vec
-from sklearn.metrics.pairwise import euclidean_distances
-from textblob import TextBlob
-import numpy as np
-import unicodedata
+import chat
+import voice
+import emotion
 
-def is_japanese(string):
-    for char in string:
-        name = unicodedata.name(char, "")
-        if "CJK UNIFIED" in name or "HIRAGANA" in name or "KATAKANA" in name:
-            return True
-    return False
+def talk(input_text):
+    kawaii_voice = voice.Voice()
 
-# Word2Vecモデルの訓練（前のステップと同様）
-sentences = [["happy", "joyful", "pleased"], ["sad", "depressed", "unhappy"], ["angry", "mad", "furious"], ["neutral", "calm", "relaxed"]]
-model = Word2Vec(sentences, vector_size=100, window=5, min_count=1, workers=2)
-
-# 感情単語のリストに「neutral」を追加
-emotion_words = ['happy', 'sad', 'angry', 'neutral']
-
-# 各感情単語のベクトルを取得
-emotion_vectors = np.array([model.wv[word] for word in emotion_words])
-
-# AIの現在の感情を表すベクトルをランダムに初期化
-current_emotion_vector = model.wv["neutral"].copy()
-
-# 入力テキストに基づいて感情の方向を変える関数
-def change_emotion_based_on_input(input_text):
-    global current_emotion_vector
-    global emotion
+    chat.initialize_conversation()
     
-    blob = TextBlob(input_text)
+    stream = kawaii_voice.setup_stream()
     
-    if is_japanese(input_text):
+    #入力に従って感情を変化させる
+    emotion.change_emotion_based_on_input(input_text)
+
+    #言語による応答
+    output = chat.chat(input_text)
+    print(output)
+
+    #音声出力
+    try:
+        voice.voice(stream, output)
+    except:
+        pass
+    
+    stream.stop_stream()
+    stream.close()
+
+    kawaii_voice.pya.terminate()
+
+
+if __name__ == "__main__":
+    kawaii_voice = voice.Voice()
+
+    chat.initialize_conversation()
+
+    while(1):
+        stream = kawaii_voice.setup_stream()
+
+        # ユーザーからのテキスト入力
+        input_text = input() 
+        if input_text == "q":
+            break
+        
+        #入力に従って感情を変化させる
+        emotion.change_emotion_based_on_input(input_text)
+
+        #言語による応答
+        output = chat.chat(input_text)
+        print(output)
+
+        #音声出力
         try:
-            translated_blob = blob.translate(to='en')
-            analyzed_text = translated_blob.string
-        except Exception as e:
-            print(f"Error translating text: {e}")
-            analyzed_text = input_text  # 翻訳に失敗した場合は元のテキストを使用
-    else:
-        analyzed_text = input_text
+            voice.voice(stream, output)
+        except:
+            continue
+        
+        stream.stop_stream()
+        stream.close()
 
-    blob = TextBlob(analyzed_text)
-    polarity = blob.sentiment.polarity
-    
-    # 極性に基づいて感情方向を選択（ポジティブ、ネガティブ、またはニュートラル）
-    if polarity > 0:
-        target_emotion = 'happy'
-    elif polarity < 0:
-        target_emotion = 'sad'
-    else:
-        target_emotion = 'neutral'
-    
-    # 対象の感情方向に現在の感情ベクトルを少し移動させる
-    target_vector = model.wv[target_emotion]
-    current_emotion_vector += (target_vector - current_emotion_vector) * 0.1  # 移動量を調整
-    
-    # 現在の感情と最も近い感情単語を探す
-    distances = euclidean_distances(emotion_vectors, [current_emotion_vector])
-    nearest_emotion_index = np.argmin(distances)
-    emotion = emotion_words[nearest_emotion_index]
-    print(f"Input sentiment: {target_emotion}, Current emotion: {emotion}")
-
-    with open('Expression.txt', 'w') as f:
-        if emotion == "happy":
-            json = {"expression": "joy"}
-            f.write(str(json))
-        else:
-            json = {"expression": "Sorrow"}
-            f.write(str(json))
-    
-
-while(1):
-    # ユーザーからのテキスト入力をシミュレート
-    input_text = input()  # ここに任意のテキストを入力
-    change_emotion_based_on_input(input_text)
-
-    if input_text == "q":
-        break
+    kawaii_voice.pya.terminate()

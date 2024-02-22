@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>音声録音と認識</title>
+</head>
+<body>
+    <button onclick="toggleRecording()">録音/停止</button>
+    <div id="textOutput">認識されたテキストがここに表示されます</div>
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ja-JP';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        function startRecording() {
+            if (!isRecording) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        mediaRecorder = new MediaRecorder(stream);
+                        mediaRecorder.ondataavailable = e => {
+                            audioChunks.push(e.data);
+                        };
+                        mediaRecorder.start();
+
+                        recognition.start();
+                        isRecording = true;
+                    });
+            }
+        }
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById("textOutput").textContent = "認識されたテキスト: " + transcript;
+        };
+
+        recognition.onend = function() {
+            if (isRecording) {
+                recognition.start(); // 音声認識を再開する
+            }
+        };
+
+        function stopRecording() {
+            if (isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const formData = new FormData();
+                    formData.append("audio_data", audioBlob);
+                    fetch("/upload", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    audioChunks = [];
+                    isRecording = false;
+
+                    recognition.stop();
+                };
+            }
+        }
+    </script>
+</body>
+</html>

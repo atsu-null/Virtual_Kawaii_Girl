@@ -1,1 +1,7 @@
 __pycache__/
+
+setting.py
+
+conversation_history.json
+
+received_audio.wav

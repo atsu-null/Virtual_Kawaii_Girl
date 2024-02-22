@@ -1,5 +1,4 @@
-# Flaskを使用した簡単なサーバー例
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, render_template
 import json
 
 app = Flask(__name__)
@@ -16,6 +15,17 @@ def get_expression():
     except FileNotFoundError:
         # ファイルが見つからない場合はエラーメッセージを返す
         return jsonify({"error": "File not found"}), 404
+
+
+@app.route('/upload', methods=['POST'])
+def upload_audio():
+    audio_file = request.files['audio_data']
+    audio_file.save("received_audio.wav")  # 音声ファイルを保存
+    return 'File uploaded successfully', 200
+
+@app.route('/', methods=['GET'])
+def get_upload_page():
+    return render_template('upload.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
