@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 import json
+import core
 
 app = Flask(__name__)
 
@@ -16,6 +17,13 @@ def get_expression():
         # ファイルが見つからない場合はエラーメッセージを返す
         return jsonify({"error": "File not found"}), 404
 
+@app.route('/submit_text', methods=['POST'])
+def talk():
+    data = request.get_json()
+    text = data.get('text')
+    core.talk(text)
+
+    return jsonify({"message": "Text received successfully", "receivedText": text})
 
 @app.route('/upload', methods=['POST'])
 def upload_audio():
