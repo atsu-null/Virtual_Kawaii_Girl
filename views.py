@@ -1,8 +1,9 @@
-from flask import Flask, jsonify, request, render_template
+from flask import render_template, jsonify, request
+from app import app 
+from func import core
 import json
-import Virtual_Kawaii_Girl.func.core as core
 
-app = Flask(__name__)
+
 
 @app.route('/get_expression')
 def get_expression():
@@ -35,5 +36,12 @@ def upload_audio():
 def get_upload_page():
     return render_template('upload.html')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+
+
+from werkzeug.exceptions import NotFound
+
+@app.errorhandler(NotFound)
+def show_404_page(error):
+    msg = error.description
+    print("error", msg)
+    return render_template("errors/404.html", msg=msg)

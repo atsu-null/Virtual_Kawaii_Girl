@@ -1,6 +1,6 @@
-import chat
-import voice
-import emotion
+import Virtual_Kawaii_Girl.func.chat as chat
+import Virtual_Kawaii_Girl.func.voice as voice
+import Virtual_Kawaii_Girl.func.emotion as emotion
 
 def talk(input_text):
     kawaii_voice = voice.Voice()
